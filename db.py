@@ -193,3 +193,6 @@ class Driver(Base):
         with session_manager() as session:
             session.delete(Driver).filter(Driver.id == driver_id)
             session.commit()
+
+
+Base.metadata.create_all(engine)

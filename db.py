@@ -178,6 +178,7 @@ class Driver(Base):
         """SELECT-запрос по id водителя."""
         with session_manager() as session:
             info = session.query(Driver).filter(Driver.id == driver_id).all()
+            print(str(info))
             return info
 
     @staticmethod

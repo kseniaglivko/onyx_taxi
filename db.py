@@ -1,6 +1,5 @@
 """Модуль для создания и работы с базой данных."""
-
-
+import enum
 from contextlib import contextmanager
 from sqlalchemy import (
     Column,
@@ -10,14 +9,15 @@ from sqlalchemy import (
     DateTime,
     create_engine,
     ForeignKey,
+    Sequence,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
-from sqlalchemy.sql.functions import sysdate
+from sqlalchemy.sql import func
 from sqlalchemy_utils.types.choice import ChoiceType
 from typing import Generator
 
-engine = create_engine("postgresql://dbuser:dbpassword@localhost:8080/db")
+engine = create_engine("postgresql://dbuser:dbpassword@localhost/db")
 
 Base = declarative_base()
 
@@ -37,7 +37,16 @@ def session_manager() -> Generator:
         session.close()
 
 
-class Order(Base): # type: ignore
+class OrderStatus(enum.Enum):
+    """Варианты статусов заказа."""
+
+    not_accepted = "not_accepted"
+    in_progress = "in_progress"
+    done = "done"
+    cancelled = "cancelled"
+
+
+class Order(Base):  # type: ignore
     """Класс, описывающий таблицу БД с заказами."""
 
     __tablename__ = "orders"  # название таблицы.
@@ -46,29 +55,34 @@ class Order(Base): # type: ignore
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
-        Integer, primary_key=True, autoincrement=True, comment="Идентификатор заказа"
+        Integer,
+        Sequence("order_id_seq", start=1001, increment=1),
+        primary_key=True,
+        comment="Идентификатор заказа",
     )
     address_from = Column(String, nullable=False, comment="Адрес отправления")
     address_to = Column(String, nullable=False, comment="Адрес назначения")
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=False)
     date_created = Column(
-        DateTime, default=sysdate, nullable=False, comment="Дата создания заказа"
+        DateTime, default=func.now(), nullable=False, comment="Дата создания заказа"
     )
     status = Column(
-        ChoiceType(
-            ["not_accepted", "in_progress", "done", "in_progress"], impl=String()
-        ),
-        nullable=False,
-        comment="Статус заказа",
+        ChoiceType(OrderStatus, impl=String()), nullable=False, comment="Статус заказа",
     )
 
     def __repr__(self) -> str:
         """Переопределение метода print."""
-        return (
-            f"Заказ № {self.id} с {self.address_from} до {self.address_to}, создан {self.date_created}. "
-            f"Статус - {self.status}. "
-            f"Идентификатор клиента - {self.client_id}, идентификатор водителя - {self.driver_id}. "
+        return str(
+            {
+                "id": self.id,
+                "address_from": self.address_from,
+                "address_to": self.address_to,
+                "client_id": self.client_id,
+                "driver_id": self.driver_id,
+                "date_created": self.date_created,
+                "status": self.status,
+            }
         )
 
     @staticmethod
@@ -76,6 +90,7 @@ class Order(Base): # type: ignore
         """SELECT-запрос по номеру заказа."""
         with session_manager() as session:
             info = session.query(Order).filter(Order.id == order_id).all()
+            print(info)
             return info
 
     @staticmethod
@@ -90,7 +105,7 @@ class Order(Base): # type: ignore
                     address_to=address_to,
                     client_id=client_id,
                     driver_id=driver_id,
-                    date_created=sysdate,
+                    date_created=func.now(),
                     status=status,
                 )
             )
@@ -115,34 +130,38 @@ class Order(Base): # type: ignore
                 {
                     Order.client_id: new_client_id,
                     Order.driver_id: new_driver_id,
-                    Order.date_created: sysdate,
+                    Order.date_created: func.now(),
                     Order.status: new_status,
                 }
             )
             session.commit()
 
 
-class Client(Base): # type: ignore
+class Client(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными клиентов."""
 
     __tablename__ = "clients"  # название таблицы.
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
-        Integer, primary_key=True, autoincrement=True, comment="Идентификатор клиента"
+        Integer,
+        Sequence("client_id_seq", start=2001, increment=1),
+        primary_key=True,
+        comment="Идентификатор клиента",
     )
     name = Column(String, nullable=False, comment="Имя клиента")
     is_vip = Column(Boolean, nullable=False, comment="Статус клиента")
 
     def __repr__(self) -> str:
         """Переопределение метода print."""
-        return f"Клиент {self.name}. Идентификатор клиента - {self.id}, vip-статус - {self.is_vip}."
+        return str({"id": self.id, "name": self.name, "is_vip": self.is_vip})
 
     @staticmethod
     def get_client_info(client_id: int) -> str:
         """SELECT-запрос по id клиента."""
         with session_manager() as session:
             info = session.query(Client).filter(Client.id == client_id).all()
+            print(info)
             return info
 
     @staticmethod
@@ -160,28 +179,31 @@ class Client(Base): # type: ignore
             session.commit()
 
 
-class Driver(Base): # type: ignore
+class Driver(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными водителей."""
 
     __tablename__ = "drivers"  # название таблицы.
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
-        Integer, primary_key=True, autoincrement=True, comment="Идентификатор водителя"
+        Integer,
+        Sequence("driver_id_seq", start=3001, increment=1),
+        primary_key=True,
+        comment="Идентификатор водителя",
     )
     name = Column(String, nullable=False, comment="Имя водителя")
     car = Column(String, nullable=False, comment="Название машины")
 
     def __repr__(self) -> str:
         """Переопределение метода print."""
-        return f"Водитель {self.name}. Идентификатор водителя - {self.id}, машина - {self.car}."
+        return str({"id": self.id, "name": self.name, "car": self.car})
 
     @staticmethod
     def get_driver_info(driver_id: int) -> str:
         """SELECT-запрос по id водителя."""
         with session_manager() as session:
             info = session.query(Driver).filter(Driver.id == driver_id).all()
-            print(str(info))
+            print(info)
             return info
 
     @staticmethod

@@ -5,23 +5,29 @@ from typing import Any
 import ast
 from db import Driver, Client, Order
 
-app = Flask("onyx_taxi")
+app = Flask(__name__)
 
 
-@app.route("/drivers/<int:id>", methods=["GET"])
+@app.route("/")
+def index() -> str:
+    """Вывод приветствия на главной странице."""
+    return "Welcome to Onyx.Taxi!"
+
+
+@app.route("/drivers/<int:driver_id>", methods=["GET"])
 def find_driver(driver_id: int) -> Any:
     """Поиск водителя по id."""
     driver = Driver()
     try:
         response = driver.get_driver_info(driver_id)
-        if response == "":
+        if response == "[]":
             return Response("Объект в базе не найден.", status=404)
         return response
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/drivers/<int:id>", methods=["DELETE"])
+@app.route("/drivers/<int:driver_id>", methods=["GET", "DELETE"])
 def delete_driver(driver_id: int) -> Response:
     """Удаление водителя из системы."""
     driver = Driver()
@@ -34,7 +40,7 @@ def delete_driver(driver_id: int) -> Response:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/drivers", methods=["POST"])
+@app.route("/drivers", methods=["GET", "POST"])
 def create_driver() -> Response:
     """Создание записи о водителе."""
     driver = Driver()
@@ -46,20 +52,20 @@ def create_driver() -> Response:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/clients/<int:id>", methods=["GET"])
+@app.route("/clients/<int:client_id>", methods=["GET"])
 def find_client(client_id: int) -> Any:
     """Поиск клиента по id."""
     client = Client()
     try:
         response = client.get_client_info(client_id)
-        if response == "":
+        if response == "[]":
             return Response("Объект в базе не найден.", status=404)
         return response
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/clients/<int:id>", methods=["DELETE"])
+@app.route("/clients/<int:client_id>", methods=["GET", "DELETE"])
 def delete_client(client_id: int) -> Response:
     """Удаление клиента из системы."""
     client = Client()
@@ -72,7 +78,7 @@ def delete_client(client_id: int) -> Response:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/clients", methods=["POST"])
+@app.route("/clients", methods=["GET", "POST"])
 def create_client() -> Response:
     """Создание записи о клиенте."""
     client = Client()
@@ -84,20 +90,20 @@ def create_client() -> Response:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/orders/<int:id>", methods=["GET"])
+@app.route("/orders/<int:order_id>", methods=["GET"])
 def find_order(order_id: int) -> Any:
     """Поиск заказа по id."""
     order = Order()
     try:
         response = order.get_order_info(order_id)
-        if response == "":
+        if response == "[]":
             return Response("Объект в базе не найден.", status=404)
         return response
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
 
-@app.route("/orders", methods=["POST"])
+@app.route("/orders", methods=["GET", "POST"])
 def create_order() -> Response:
     """Создание заказа."""
     order = Order()
@@ -107,7 +113,7 @@ def create_order() -> Response:
             order.create_order(
                 data["address_from"],
                 data["address_to"],
-                data["client_id"],
+                data["'client_id"],
                 data["driver_id"],
                 data["status"],
             )
@@ -118,7 +124,7 @@ def create_order() -> Response:
         return Response("Плохой json.", status=400)
 
 
-@app.route("/orders/<int:id>", methods=["PUT"])
+@app.route("/orders/<int:order_id>", methods=["GET", "PUT"])
 def update_order(order_id: int) -> Response:
     """Изменение заказа."""
     order = Order()

@@ -1,3 +1,6 @@
+"""Модуль для создания и работы с базой данных."""
+
+
 from contextlib import contextmanager
 from sqlalchemy import (
     Column,
@@ -34,7 +37,7 @@ def session_manager() -> Generator:
         session.close()
 
 
-class Order(Base):
+class Order(Base): # type: ignore
     """Класс, описывающий таблицу БД с заказами."""
 
     __tablename__ = "orders"  # название таблицы.
@@ -60,7 +63,7 @@ class Order(Base):
         comment="Статус заказа",
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Переопределение метода print."""
         return (
             f"Заказ № {self.id} с {self.address_from} до {self.address_to}, создан {self.date_created}. "
@@ -94,7 +97,7 @@ class Order(Base):
             session.commit()
 
     @staticmethod
-    def update_order_status(order_id, new_status) -> None:
+    def update_order_status(order_id: int, new_status: str) -> None:
         """Изменение статуса заказа."""
         with session_manager() as session:
             session.query(Order).filter(Order.id == order_id).update(
@@ -119,7 +122,7 @@ class Order(Base):
             session.commit()
 
 
-class Client(Base):
+class Client(Base): # type: ignore
     """Класс, описывающий таблицу БД с данными клиентов."""
 
     __tablename__ = "clients"  # название таблицы.
@@ -131,7 +134,7 @@ class Client(Base):
     name = Column(String, nullable=False, comment="Имя клиента")
     is_vip = Column(Boolean, nullable=False, comment="Статус клиента")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Переопределение метода print."""
         return f"Клиент {self.name}. Идентификатор клиента - {self.id}, vip-статус - {self.is_vip}."
 
@@ -157,7 +160,7 @@ class Client(Base):
             session.commit()
 
 
-class Driver(Base):
+class Driver(Base): # type: ignore
     """Класс, описывающий таблицу БД с данными водителей."""
 
     __tablename__ = "drivers"  # название таблицы.
@@ -169,7 +172,7 @@ class Driver(Base):
     name = Column(String, nullable=False, comment="Имя водителя")
     car = Column(String, nullable=False, comment="Название машины")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Переопределение метода print."""
         return f"Водитель {self.name}. Идентификатор водителя - {self.id}, машина - {self.car}."
 

@@ -50,8 +50,8 @@ class Order(Base):  # type: ignore
     """Класс, описывающий таблицу БД с заказами."""
 
     __tablename__ = "orders"  # название таблицы.
-    client = relationship("Client")
-    driver = relationship("Driver")
+    client = relationship("Client", back_populates="orders")
+    driver = relationship("Driver", back_populates="orders")
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
@@ -65,72 +65,73 @@ class Order(Base):  # type: ignore
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=False)
     date_created = Column(
-        DateTime, default=func.now(), nullable=False, comment="Дата создания заказа"
+        DateTime, server_default=func.now(), comment="Дата создания заказа"
     )
     status = Column(
         ChoiceType(OrderStatus, impl=String()), nullable=False, comment="Статус заказа",
     )
 
+    def __init__(
+        self,
+        address_from: str = None,
+        address_to: str = None,
+        client_id: str = None,
+        driver_id: str = None,
+        status: str = None,
+    ) -> None:
+        """Инициализация заказа."""
+        self.address_to = address_from
+        self.address_from = address_to
+        self.client_id = client_id
+        self.driver_id = driver_id
+        self.status = status
+
     def __repr__(self) -> str:
         """Переопределение метода print."""
         return str(
             {
-                "id": self.id,
+                "order_id": self.id,
                 "address_from": self.address_from,
                 "address_to": self.address_to,
                 "client_id": self.client_id,
                 "driver_id": self.driver_id,
-                "date_created": self.date_created,
                 "status": self.status,
             }
         )
 
     @staticmethod
-    def get_order_info(order_id: int) -> str:
+    def get_order_info(order_id: str) -> str:
         """SELECT-запрос по номеру заказа."""
         with session_manager() as session:
-            info = session.query(Order).filter(Order.id == order_id).all()
-            print(info)
+            info = session.query(Order).get(int(order_id))
             return info
 
     @staticmethod
-    def create_order(
-        address_from: str, address_to: str, client_id: int, driver_id: int, status: str
-    ) -> None:
+    def create_order() -> None:
         """Создание заказа."""
         with session_manager() as session:
-            session.add(
-                Order(
-                    address_from=address_from,
-                    address_to=address_to,
-                    client_id=client_id,
-                    driver_id=driver_id,
-                    date_created=func.now(),
-                    status=status,
-                )
-            )
+            session.add()
             session.commit()
 
     @staticmethod
-    def update_order_status(order_id: int, new_status: str) -> None:
+    def update_order_status(order_id: str, new_status: str) -> None:
         """Изменение статуса заказа."""
         with session_manager() as session:
-            session.query(Order).filter(Order.id == order_id).update(
+            session.query(Order).filter(Order.id == int(order_id)).update(
                 {Order.status: new_status}
             )
             session.commit()
 
     @staticmethod
     def update_order(
-        order_id: int, new_client_id: int, new_driver_id: int, new_status: str
+        order_id: str, new_client_id: str, new_driver_id: str, new_status: str
     ) -> None:
         """Изменение информации о заказе."""
         with session_manager() as session:
-            session.query(Order).filter(Order.id == order_id).update(
+            session.query(Order).filter(Order.id == int(order_id)).update(
                 {
-                    Order.client_id: new_client_id,
-                    Order.driver_id: new_driver_id,
-                    Order.date_created: func.now(),
+                    Order.client_id: int(new_client_id),
+                    Order.driver_id: int(new_driver_id),
                     Order.status: new_status,
                 }
             )
@@ -141,6 +142,7 @@ class Client(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными клиентов."""
 
     __tablename__ = "clients"  # название таблицы.
+    orders = relationship("Order", back_populates="Client")
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
@@ -152,30 +154,34 @@ class Client(Base):  # type: ignore
     name = Column(String, nullable=False, comment="Имя клиента")
     is_vip = Column(Boolean, nullable=False, comment="Статус клиента")
 
+    def __init__(self, name: str = None, is_vip: bool = None) -> None:
+        """Инициализация клиента."""
+        self.name = name
+        self.is_vip = is_vip
+
     def __repr__(self) -> str:
         """Переопределение метода print."""
         return str({"id": self.id, "name": self.name, "is_vip": self.is_vip})
 
     @staticmethod
-    def get_client_info(client_id: int) -> str:
+    def get_client_info(client_id: str) -> str:
         """SELECT-запрос по id клиента."""
         with session_manager() as session:
-            info = session.query(Client).filter(Client.id == client_id).all()
-            print(info)
+            info = session.query(Order).get(int(client_id))
             return info
 
     @staticmethod
-    def create_client(name: str, is_vip: bool) -> None:
+    def create_client() -> None:
         """Создание клиента."""
         with session_manager() as session:
-            session.add(Client(name=name, is_vip=is_vip))
+            session.add()
             session.commit()
 
     @staticmethod
-    def delete_client(client_id: int) -> None:
+    def delete_client(client_id: str) -> None:
         """Удаление записи о клиенте."""
         with session_manager() as session:
-            session.delete(Client).filter(Client.id == client_id)
+            session.query(Client).filter(Client.id == int(client_id)).delete()
             session.commit()
 
 
@@ -183,6 +189,7 @@ class Driver(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными водителей."""
 
     __tablename__ = "drivers"  # название таблицы.
+    orders = relationship("Order", back_populates="Client")
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
     id = Column(
@@ -194,30 +201,34 @@ class Driver(Base):  # type: ignore
     name = Column(String, nullable=False, comment="Имя водителя")
     car = Column(String, nullable=False, comment="Название машины")
 
+    def __init__(self, name: str = None, car: str = None) -> None:
+        """Инициализация водителя."""
+        self.name = name
+        self.car = car
+
     def __repr__(self) -> str:
         """Переопределение метода print."""
         return str({"id": self.id, "name": self.name, "car": self.car})
 
     @staticmethod
-    def get_driver_info(driver_id: int) -> str:
+    def get_driver_info(driver_id: str) -> str:
         """SELECT-запрос по id водителя."""
         with session_manager() as session:
-            info = session.query(Driver).filter(Driver.id == driver_id).all()
-            print(info)
+            info = session.query(Order).get(int(driver_id))
             return info
 
     @staticmethod
-    def create_driver(name: str, car: str) -> None:
+    def create_driver() -> None:
         """Создание клиента."""
         with session_manager() as session:
-            session.add(Driver(name=name, car=car))
+            session.add()
             session.commit()
 
     @staticmethod
-    def delete_driver(driver_id: int) -> None:
+    def delete_driver(driver_id: str) -> None:
         """Удаление записи о клиенте."""
         with session_manager() as session:
-            session.delete(Driver).filter(Driver.id == driver_id)
+            session.query(Client).filter(Client.id == int(driver_id)).delete()
             session.commit()
 
 

@@ -90,7 +90,7 @@ class Order(Base):  # type: ignore
                 "address_to": self.address_to,
                 "client_id": self.client_id,
                 "driver_id": self.driver_id,
-                "date_created": self.date_created,
+                "date_created": self.date_created.strftime("%d-%b-%Y (%H:%M:%S.%f)"),
                 "status": str(self.status),
             }
         )
@@ -100,6 +100,13 @@ class Order(Base):  # type: ignore
         """SELECT-запрос по номеру заказа."""
         with session_manager() as session:
             info = session.query(Order).get(int(order_id))
+            return info
+
+    @staticmethod
+    def get_order_status(order_id: str) -> str:
+        """SELECT-запрос о статусе заказа по его номеру."""
+        with session_manager() as session:
+            info = session.query(Order.status).filter(Order.id == int(order_id)).first()
             return info
 
     def create_order(self) -> None:

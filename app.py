@@ -1,7 +1,6 @@
 """Реализация взаимодействия с базой данных через API."""
 from flask import Flask, Response, request
 from typing import Any
-import ast
 
 from db import Driver, Client, Order
 
@@ -36,7 +35,7 @@ def delete_driver(driver_id: str) -> Response:
         if response is None:
             return Response("Объект в базе не найден.", status=404)
         driver.delete_driver(driver_id)
-        return Response("Удалено.", status=204)
+        return Response("Удалено.", status=201)
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
@@ -48,7 +47,7 @@ def create_driver() -> Response:
     try:
         driver = Driver(id=driver_info["id"], name=driver_info["name"], car=driver_info["car"])
         driver.create_driver()
-        return Response("Запись создана.", status=204)
+        return Response("Запись создана.", status=201)
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
@@ -75,7 +74,7 @@ def delete_client(client_id: str) -> Response:
         if response is None:
             return Response("Объект в базе не найден.", status=404)
         client.delete_client(client_id)
-        return Response("Удалено.", status=204)
+        return Response("Удалено.", status=201)
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
@@ -87,7 +86,7 @@ def create_client() -> Response:
     try:
         client = Client(id=client_info["id"], name=client_info["name"], is_vip=client_info["is_vip"])
         client.create_client()
-        return Response("Запись создана.", status=204)
+        return Response("Запись создана.", status=201)
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
@@ -120,7 +119,7 @@ def create_order() -> Response:
             status=order_info["status"],
         )
         order.create_order()
-        return Response("Запись создана.", status=204)
+        return Response("Запись создана.", status=201)
     except Exception:
         return Response("Неправильный запрос.", status=400)
 
@@ -133,11 +132,10 @@ def update_order(order_id: str) -> Response:
         new_order_data = request.get_json()
         if order.get_order_info(order_id) is None:
             return Response("Объект в базе не найден.", status=404)
-        db_data = order.get_order_info(order_id)
-        current_order_data = ast.literal_eval(db_data)
+        order_status = order.get_order_status(order_id)
         if (
             new_order_data["status"] in ["in_progress", "cancelled"]
-            and current_order_data["status"] == "not_accepted"
+            and "not_accepted" in order_status
         ):
             try:
                 order.update_order(
@@ -146,16 +144,16 @@ def update_order(order_id: str) -> Response:
                     new_order_data["driver_id"],
                     new_order_data["status"],
                 )
-                return Response("Запись изменена.", status=204)
+                return Response("Запись изменена.", status=201)
             except Exception:
                 return Response("Неправильный запрос.", status=400)
         elif (
             new_order_data["status"] in ["done", "cancelled"]
-            and current_order_data["status"] == "in_progress"
+            and "in_progress" in order_status
         ):
             try:
                 order.update_order_status(order_id, new_order_data["status"])
-                return Response("Запись изменена.", status=204)
+                return Response("Запись изменена.", status=201)
             except Exception:
                 return Response("Неправильный запрос.", status=400)
         return Response("Неверная последовательность статусов", status=400)

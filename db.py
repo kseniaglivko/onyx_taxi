@@ -1,5 +1,4 @@
 """Модуль для создания и работы с базой данных."""
-import enum
 from contextlib import contextmanager
 from sqlalchemy import (
     Column,
@@ -9,19 +8,18 @@ from sqlalchemy import (
     DateTime,
     create_engine,
     ForeignKey,
-    Sequence,
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
-from sqlalchemy.sql import func
 from sqlalchemy_utils.types.choice import ChoiceType
 from typing import Generator
+from datetime import datetime
 
 engine = create_engine("postgresql://dbuser:dbpassword@localhost/db")
 
 Base = declarative_base()
 
-Session = scoped_session(sessionmaker(ind=engine))
+Session = scoped_session(sessionmaker(autoflush=True, autocommit=False, bind=engine))
 
 
 @contextmanager
@@ -37,53 +35,50 @@ def session_manager() -> Generator:
         session.close()
 
 
-class OrderStatus(enum.Enum):
-    """Варианты статусов заказа."""
-
-    not_accepted = "not_accepted"
-    in_progress = "in_progress"
-    done = "done"
-    cancelled = "cancelled"
-
-
 class Order(Base):  # type: ignore
     """Класс, описывающий таблицу БД с заказами."""
 
     __tablename__ = "orders"  # название таблицы.
-    client = relationship("Client", back_populates="orders")
-    driver = relationship("Driver", back_populates="orders")
+    client = relationship("Client")
+    driver = relationship("Driver")
+
+    STATUS_TYPES = {
+        "not_accepted": "not_accepted",
+        "in_progress": "in_progress",
+        "done": "done",
+        "cancelled": "cancelled",
+    }
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(
-        Integer,
-        Sequence("order_id_seq", start=1001, increment=1),
-        primary_key=True,
-        comment="Идентификатор заказа",
-    )
+    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор заказа")
     address_from = Column(String, nullable=False, comment="Адрес отправления")
     address_to = Column(String, nullable=False, comment="Адрес назначения")
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=False)
     date_created = Column(
-        DateTime, server_default=func.now(), comment="Дата создания заказа"
+        DateTime, default=datetime.utcnow, comment="Дата создания заказа"
     )
     status = Column(
-        ChoiceType(OrderStatus, impl=String()), nullable=False, comment="Статус заказа",
+        ChoiceType(STATUS_TYPES, impl=String()), nullable=False, comment="Статус заказа",
     )
 
     def __init__(
-        self,
-        address_from: str = None,
-        address_to: str = None,
-        client_id: str = None,
-        driver_id: str = None,
-        status: str = None,
+            self,
+            id: str = None,
+            address_from: str = None,
+            address_to: str = None,
+            client_id: str = None,
+            driver_id: str = None,
+            date_created: str = None,
+            status: str = None,
     ) -> None:
         """Инициализация заказа."""
+        self.id = id
         self.address_to = address_from
         self.address_from = address_to
         self.client_id = client_id
         self.driver_id = driver_id
+        self.date_created = date_created
         self.status = status
 
     def __repr__(self) -> str:
@@ -95,7 +90,8 @@ class Order(Base):  # type: ignore
                 "address_to": self.address_to,
                 "client_id": self.client_id,
                 "driver_id": self.driver_id,
-                "status": self.status,
+                "date_created": self.date_created,
+                "status": str(self.status),
             }
         )
 
@@ -106,11 +102,10 @@ class Order(Base):  # type: ignore
             info = session.query(Order).get(int(order_id))
             return info
 
-    @staticmethod
-    def create_order() -> None:
+    def create_order(self) -> None:
         """Создание заказа."""
         with session_manager() as session:
-            session.add()
+            session.add(self)
             session.commit()
 
     @staticmethod
@@ -124,7 +119,7 @@ class Order(Base):  # type: ignore
 
     @staticmethod
     def update_order(
-        order_id: str, new_client_id: str, new_driver_id: str, new_status: str
+            order_id: str, new_client_id: str, new_driver_id: str, new_status: str
     ) -> None:
         """Изменение информации о заказе."""
         with session_manager() as session:
@@ -142,20 +137,15 @@ class Client(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными клиентов."""
 
     __tablename__ = "clients"  # название таблицы.
-    orders = relationship("Order", back_populates="Client")
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(
-        Integer,
-        Sequence("client_id_seq", start=2001, increment=1),
-        primary_key=True,
-        comment="Идентификатор клиента",
-    )
+    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор клиента")
     name = Column(String, nullable=False, comment="Имя клиента")
     is_vip = Column(Boolean, nullable=False, comment="Статус клиента")
 
-    def __init__(self, name: str = None, is_vip: bool = None) -> None:
+    def __init__(self, id: int = None, name: str = None, is_vip: bool = None) -> None:
         """Инициализация клиента."""
+        self.id = id
         self.name = name
         self.is_vip = is_vip
 
@@ -167,14 +157,13 @@ class Client(Base):  # type: ignore
     def get_client_info(client_id: str) -> str:
         """SELECT-запрос по id клиента."""
         with session_manager() as session:
-            info = session.query(Order).get(int(client_id))
+            info = session.query(Client).get(int(client_id))
             return info
 
-    @staticmethod
-    def create_client() -> None:
+    def create_client(self) -> None:
         """Создание клиента."""
         with session_manager() as session:
-            session.add()
+            session.add(self)
             session.commit()
 
     @staticmethod
@@ -189,20 +178,15 @@ class Driver(Base):  # type: ignore
     """Класс, описывающий таблицу БД с данными водителей."""
 
     __tablename__ = "drivers"  # название таблицы.
-    orders = relationship("Order", back_populates="Client")
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(
-        Integer,
-        Sequence("driver_id_seq", start=3001, increment=1),
-        primary_key=True,
-        comment="Идентификатор водителя",
-    )
+    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор водителя")
     name = Column(String, nullable=False, comment="Имя водителя")
     car = Column(String, nullable=False, comment="Название машины")
 
-    def __init__(self, name: str = None, car: str = None) -> None:
+    def __init__(self, id: int = None, name: str = None, car: str = None) -> None:
         """Инициализация водителя."""
+        self.id = id
         self.name = name
         self.car = car
 
@@ -214,21 +198,20 @@ class Driver(Base):  # type: ignore
     def get_driver_info(driver_id: str) -> str:
         """SELECT-запрос по id водителя."""
         with session_manager() as session:
-            info = session.query(Order).get(int(driver_id))
+            info = session.query(Driver).get(int(driver_id))
             return info
 
-    @staticmethod
-    def create_driver() -> None:
+    def create_driver(self) -> None:
         """Создание клиента."""
         with session_manager() as session:
-            session.add()
+            session.add(self)
             session.commit()
 
     @staticmethod
     def delete_driver(driver_id: str) -> None:
         """Удаление записи о клиенте."""
         with session_manager() as session:
-            session.query(Client).filter(Client.id == int(driver_id)).delete()
+            session.query(Driver).filter(Driver.id == int(driver_id)).delete()
             session.commit()
 
 

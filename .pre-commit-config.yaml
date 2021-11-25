@@ -14,4 +14,3 @@ repos:
     - id: debug-statements
     - id: end-of-file-fixer
     - id: requirements-txt-fixer
-    - id: flake8

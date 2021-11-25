@@ -1,0 +1,16 @@
+attrs==21.2.0
+flake8==3.9.2
+jsonschema==3.2.0
+mccabe==0.6.1
+mypy==0.910
+mypy-extensions==0.4.3
+peewee==3.14.4
+pep257==0.7.0
+pycodestyle==2.7.0
+pyflakes==2.3.1
+pyrsistent==0.18.0
+six==1.16.0
+toml==0.10.2
+typing-extensions==3.10.0.0
+vulture==2.3
+tox==3.24.0

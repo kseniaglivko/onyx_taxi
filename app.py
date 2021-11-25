@@ -45,7 +45,9 @@ def create_driver() -> Response:
     """Создание записи о водителе."""
     driver_info = request.get_json()
     try:
-        driver = Driver(id=driver_info["id"], name=driver_info["name"], car=driver_info["car"])
+        driver = Driver(
+            id=driver_info["id"], name=driver_info["name"], car=driver_info["car"]
+        )
         driver.create_driver()
         return Response("Запись создана.", status=201)
     except Exception:
@@ -84,7 +86,9 @@ def create_client() -> Response:
     """Создание записи о клиенте."""
     client_info = request.get_json()
     try:
-        client = Client(id=client_info["id"], name=client_info["name"], is_vip=client_info["is_vip"])
+        client = Client(
+            id=client_info["id"], name=client_info["name"], is_vip=client_info["is_vip"]
+        )
         client.create_client()
         return Response("Запись создана.", status=201)
     except Exception:

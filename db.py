@@ -50,7 +50,9 @@ class Order(Base):  # type: ignore
     }
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор заказа")
+    id = Column(
+        Integer, autoincrement=True, primary_key=True, comment="Идентификатор заказа"
+    )
     address_from = Column(String, nullable=False, comment="Адрес отправления")
     address_to = Column(String, nullable=False, comment="Адрес назначения")
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
@@ -59,18 +61,20 @@ class Order(Base):  # type: ignore
         DateTime, default=datetime.utcnow, comment="Дата создания заказа"
     )
     status = Column(
-        ChoiceType(STATUS_TYPES, impl=String()), nullable=False, comment="Статус заказа",
+        ChoiceType(STATUS_TYPES, impl=String()),
+        nullable=False,
+        comment="Статус заказа",
     )
 
     def __init__(
-            self,
-            id: str = None,
-            address_from: str = None,
-            address_to: str = None,
-            client_id: str = None,
-            driver_id: str = None,
-            date_created: str = None,
-            status: str = None,
+        self,
+        id: str = None,
+        address_from: str = None,
+        address_to: str = None,
+        client_id: str = None,
+        driver_id: str = None,
+        date_created: str = None,
+        status: str = None,
     ) -> None:
         """Инициализация заказа."""
         self.id = id
@@ -126,7 +130,7 @@ class Order(Base):  # type: ignore
 
     @staticmethod
     def update_order(
-            order_id: str, new_client_id: str, new_driver_id: str, new_status: str
+        order_id: str, new_client_id: str, new_driver_id: str, new_status: str
     ) -> None:
         """Изменение информации о заказе."""
         with session_manager() as session:
@@ -146,7 +150,9 @@ class Client(Base):  # type: ignore
     __tablename__ = "clients"  # название таблицы.
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор клиента")
+    id = Column(
+        Integer, autoincrement=True, primary_key=True, comment="Идентификатор клиента"
+    )
     name = Column(String, nullable=False, comment="Имя клиента")
     is_vip = Column(Boolean, nullable=False, comment="Статус клиента")
 
@@ -187,7 +193,9 @@ class Driver(Base):  # type: ignore
     __tablename__ = "drivers"  # название таблицы.
 
     # Атрибуты класса, описывающие колонки таблицы, их типы данных и ограничения.
-    id = Column(Integer, autoincrement=True, primary_key=True, comment="Идентификатор водителя")
+    id = Column(
+        Integer, autoincrement=True, primary_key=True, comment="Идентификатор водителя"
+    )
     name = Column(String, nullable=False, comment="Имя водителя")
     car = Column(String, nullable=False, comment="Название машины")
 

@@ -15,4 +15,3 @@ install:
 script:
   - pre-commit run --all-files
   - tox
-  - python main.py

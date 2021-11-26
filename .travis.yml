@@ -1,6 +1,9 @@
 language: python
 python: 3.9
 
+addons:
+  chrome: stable
+
 before_install:
   - python -m pip install --upgrade pip
   - pip install pre-commit

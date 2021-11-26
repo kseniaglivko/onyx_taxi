@@ -13,4 +13,4 @@ install:
 script:
   - pre-commit run --all-files
   - tox
-  - python3 main.py
+  - python main.py

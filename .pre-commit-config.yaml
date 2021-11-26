@@ -13,4 +13,4 @@ repos:
     - id: check-yaml
     - id: debug-statements
     - id: end-of-file-fixer
-    - id: requirements-txt-fixer
+      exclude: requirements.txt

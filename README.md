@@ -1,3 +1,5 @@
+[![Build Status](https://app.travis-ci.com/kseniaglivko/onyx_taxi.svg?branch=master)](https://app.travis-ci.com/kseniaglivko/onyx_taxi)
+
 # Onyx.Taxi
 
 Начальная стадия реализации сервиса заказа такси.

@@ -9,6 +9,7 @@ before_install:
 
 install:
   - pip install -r requirements.txt
+  - pip install -r tox_requirements.txt
 
 script:
   - pre-commit run --all-files
